@@ -7,7 +7,7 @@ export interface GeneralIssue {
   description: string;
 }
 
-const LARGE_FILE_LINE_THRESHOLD = 1500;
+const LARGE_FILE_LINE_THRESHOLD = 25000;
 const TODO_REGEX = /\b(TODO|FIXME|HACK|XXX)\b[:\s]*(.*)/i;
 
 export function detectTodos(filePath: string, content: string): GeneralIssue[] {
