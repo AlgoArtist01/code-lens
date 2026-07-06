@@ -10,21 +10,25 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const LIGHT_OVERRIDES: Record<string, string> = {
-  "--bg": "#F7F8FA",
+  "--bg": "#F4F6FB",
   "--surface": "#FFFFFF",
-  "--surface-raised": "#F0F2F5",
-  "--border": "#E1E4E8",
-  "--text": "#1A1D23",
+  "--surface-raised": "#FFFFFF",
+  "--surface-hover": "#F0F2F8",
+  "--border": "rgba(20, 25, 40, 0.08)",
+  "--border-strong": "rgba(20, 25, 40, 0.16)",
+  "--text": "#12161F",
   "--text-muted": "#6B7280",
 };
 
 const DARK_DEFAULTS: Record<string, string> = {
-  "--bg": "#14171C",
-  "--surface": "#1C2028",
-  "--surface-raised": "#23272F",
-  "--border": "#2C313A",
-  "--text": "#E6E8EB",
-  "--text-muted": "#8B92A0",
+  "--bg": "#0B0E14",
+  "--surface": "#12161F",
+  "--surface-raised": "#1A1F2B",
+  "--surface-hover": "#212736",
+  "--border": "rgba(255, 255, 255, 0.08)",
+  "--border-strong": "rgba(255, 255, 255, 0.14)",
+  "--text": "#EDEFF3",
+  "--text-muted": "#8A93A6",
 };
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

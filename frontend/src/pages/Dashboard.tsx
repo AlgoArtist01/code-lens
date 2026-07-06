@@ -63,16 +63,16 @@ export function Dashboard() {
   }
 
   async function handleDelete(e: React.MouseEvent, repoId: string) {
-  e.preventDefault(); // stop the Link navigation
-  e.stopPropagation();
-  if (!confirm("Delete this repository? This cannot be undone.")) return;
-  try {
-    await api.delete(`/repo/${repoId}`);
-    await loadRepos();
-  } catch {
-    setActionError("Failed to delete repository");
+    e.preventDefault(); // stop the Link navigation
+    e.stopPropagation();
+    if (!confirm("Delete this repository? This cannot be undone.")) return;
+    try {
+      await api.delete(`/repo/${repoId}`);
+      await loadRepos();
+    } catch {
+      setActionError("Failed to delete repository");
+    }
   }
-}
 
   return (
     <div>
@@ -147,7 +147,13 @@ export function Dashboard() {
       </div>
 
       {actionError && <p style={{ color: "var(--critical)", marginBottom: "1rem" }}>{actionError}</p>}
-      {loading && <p style={{ color: "var(--text-muted)" }}>Loading repositories...</p>}
+      {loading && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 64, borderRadius: 8 }} />
+          ))}
+        </div>
+      )}
       {error && <p style={{ color: "var(--critical)" }}>{error}</p>}
 
       {!loading && !error && repos.length === 0 && (
@@ -171,6 +177,7 @@ export function Dashboard() {
             <Link
               key={repo.id}
               to={`/repository/${repo.id}`}
+              className="fade-in"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -181,14 +188,25 @@ export function Dashboard() {
                 padding: "1rem 1.25rem",
                 textDecoration: "none",
                 color: "var(--text)",
+                transition: "border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "var(--accent)";
+                e.currentTarget.style.transform = "translateY(-1px)";
+                e.currentTarget.style.boxShadow = "var(--shadow)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "var(--border)";
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
-            <div>
-              <div style={{ fontWeight: 600 }}>{repo.name}</div>
-                  <div className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
-                    {repo.source_type} · {new Date(repo.created_at).toLocaleDateString()}
-                  </div>
+              <div>
+                <div style={{ fontWeight: 600 }}>{repo.name}</div>
+                <div className="mono" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem" }}>
+                  {repo.source_type} · {new Date(repo.created_at).toLocaleDateString()}
                 </div>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                 <StatusBadge status={repo.status} />
                 <button
@@ -203,8 +221,8 @@ export function Dashboard() {
                     fontSize: "0.75rem",
                   }}
                 >
-                Delete
-              </button>
+                  Delete
+                </button>
               </div>
             </Link>
           ))}

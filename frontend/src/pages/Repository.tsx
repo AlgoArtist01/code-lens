@@ -140,7 +140,17 @@ function ChartsSection({ issues, files }: { issues: Issue[]; files: FileEntry[] 
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: "1rem" }}>
+    <div
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--border)",
+        borderRadius: 10,
+        padding: "1rem",
+        transition: "border-color 0.15s ease",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--text-muted)")}
+      onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
+    >
       <h3 style={{ fontSize: "0.9rem", margin: "0 0 0.5rem", color: "var(--text-muted)" }}>{title}</h3>
       {children}
     </div>
@@ -169,20 +179,24 @@ export function Repository() {
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [symbols, setSymbols] = useState<Symbol[]>([]);
   const [symbolTypeFilter, setSymbolTypeFilter] = useState<string | null>(null);
+  const [repoName, setRepoName] = useState<string>("");
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const [issuesRes, treeRes, symbolsRes] = await Promise.all([
+        const [issuesRes, treeRes, symbolsRes, reposRes] = await Promise.all([
           api.get(`/repo/${id}/issues`),
           api.get(`/repo/${id}/tree`),
           api.get(`/repo/${id}/symbols`),
+          api.get(`/repos`),
         ]);
         setIssues(issuesRes.data.issues);
         setFiles(treeRes.data.files);
         setSymbols(symbolsRes.data.symbols);
+        const match = reposRes.data.find((r: any) => r.id === id);
+        setRepoName(match?.name ?? "Repository");
       } catch {
         setError("Failed to load repository data");
       } finally {
@@ -191,83 +205,83 @@ export function Repository() {
     }
     load();
   }, [id]);
-async function runParse() {
-  setActionLoading("parse");
-  setActionMsg(null);
-  try {
-    const res = await api.post(`/repo/${id}/parse`);
-    setActionMsg(`Parsed: ${res.data.filesIndexed} files, ${res.data.symbolsExtracted} symbols`);
-    const treeRes = await api.get(`/repo/${id}/tree`);
-    setFiles(treeRes.data.files);
-    const symbolsRes = await api.get(`/repo/${id}/symbols`);
-    setSymbols(symbolsRes.data.symbols);
-  } catch (err: any) {
-    setActionMsg(err.response?.data?.error ?? "Parse failed");
-  } finally {
-    setActionLoading(null);
-  }
-}
-
-async function runAnalyze(kind: "general" | "python" | "js") {
-  setActionLoading(kind);
-  setActionMsg(null);
-  try {
-    const res = await api.post(`/repo/${id}/analyze/${kind}`);
-    setActionMsg(`${kind}: ${res.data.issuesFound} issues found`);
-    const issuesRes = await api.get(`/repo/${id}/issues`);
-    setIssues(issuesRes.data.issues);
-  } catch (err: any) {
-    setActionMsg(err.response?.data?.error ?? `${kind} analysis failed`);
-  } finally {
-    setActionLoading(null);
-  }
-}
-
-async function startBackgroundReview() {
-  setActionLoading("review");
-  setActionMsg(null);
-  try {
-    const res = await api.post(`/repo/${id}/review`);
-    setActionMsg("Background review queued");
-    pollJob(res.data.jobId);
-  } catch (err: any) {
-    setActionMsg(err.response?.data?.error ?? "Failed to queue review");
-    setActionLoading(null);
-  }
-}
-
-function pollJob(jobId: string) {
-  const interval = setInterval(async () => {
+  async function runParse() {
+    setActionLoading("parse");
+    setActionMsg(null);
     try {
-      const res = await api.get(`/repo/${id}/review/${jobId}`);
-      setJob(res.data);
-      if (res.data.status === "completed" || res.data.status === "failed" || res.data.status === "cancelled") {
-        clearInterval(interval);
-        setActionLoading(null);
-        if (res.data.status === "completed") {
-          const issuesRes = await api.get(`/repo/${id}/issues`);
-          setIssues(issuesRes.data.issues);
-          const treeRes = await api.get(`/repo/${id}/tree`);
-          setFiles(treeRes.data.files);
-        }
-      }
-    } catch {
-      clearInterval(interval);
+      const res = await api.post(`/repo/${id}/parse`);
+      setActionMsg(`Parsed: ${res.data.filesIndexed} files, ${res.data.symbolsExtracted} symbols`);
+      const treeRes = await api.get(`/repo/${id}/tree`);
+      setFiles(treeRes.data.files);
+      const symbolsRes = await api.get(`/repo/${id}/symbols`);
+      setSymbols(symbolsRes.data.symbols);
+    } catch (err: any) {
+      setActionMsg(err.response?.data?.error ?? "Parse failed");
+    } finally {
       setActionLoading(null);
     }
-  }, 2000);
-}
-
-async function cancelJob() {
-  if (!job) return;
-  try {
-    await api.post(`/repo/${id}/review/${job.id}/cancel`);
-    setJob({ ...job, status: "cancelled" });
-    setActionLoading(null);
-  } catch {
-    setActionMsg("Failed to cancel job");
   }
-}
+
+  async function runAnalyze(kind: "general" | "python" | "js") {
+    setActionLoading(kind);
+    setActionMsg(null);
+    try {
+      const res = await api.post(`/repo/${id}/analyze/${kind}`);
+      setActionMsg(`${kind}: ${res.data.issuesFound} issues found`);
+      const issuesRes = await api.get(`/repo/${id}/issues`);
+      setIssues(issuesRes.data.issues);
+    } catch (err: any) {
+      setActionMsg(err.response?.data?.error ?? `${kind} analysis failed`);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function startBackgroundReview() {
+    setActionLoading("review");
+    setActionMsg(null);
+    try {
+      const res = await api.post(`/repo/${id}/review`);
+      setActionMsg("Background review queued");
+      pollJob(res.data.jobId);
+    } catch (err: any) {
+      setActionMsg(err.response?.data?.error ?? "Failed to queue review");
+      setActionLoading(null);
+    }
+  }
+
+  function pollJob(jobId: string) {
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get(`/repo/${id}/review/${jobId}`);
+        setJob(res.data);
+        if (res.data.status === "completed" || res.data.status === "failed" || res.data.status === "cancelled") {
+          clearInterval(interval);
+          setActionLoading(null);
+          if (res.data.status === "completed") {
+            const issuesRes = await api.get(`/repo/${id}/issues`);
+            setIssues(issuesRes.data.issues);
+            const treeRes = await api.get(`/repo/${id}/tree`);
+            setFiles(treeRes.data.files);
+          }
+        }
+      } catch {
+        clearInterval(interval);
+        setActionLoading(null);
+      }
+    }, 2000);
+  }
+
+  async function cancelJob() {
+    if (!job) return;
+    try {
+      await api.post(`/repo/${id}/review/${job.id}/cancel`);
+      setJob({ ...job, status: "cancelled" });
+      setActionLoading(null);
+    } catch {
+      setActionMsg("Failed to cancel job");
+    }
+  }
 
   const counts = SEVERITY_ORDER.reduce((acc, sev) => {
     acc[sev] = issues.filter((i) => i.severity === sev).length;
@@ -280,7 +294,18 @@ async function cancelJob() {
   const totalPages = Math.max(1, Math.ceil(filteredIssues.length / PAGE_SIZE));
   const paginatedIssues = filteredIssues.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (loading) return <p style={{ color: "var(--text-muted)" }}>Loading repository...</p>;
+  if (loading)
+    return (
+      <div>
+        <div className="skeleton" style={{ height: 24, width: 200, marginBottom: "1.5rem" }} />
+        <div className="skeleton" style={{ height: 10, marginBottom: "2rem" }} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton" style={{ height: 220, borderRadius: 10 }} />
+          ))}
+        </div>
+      </div>
+    );
   if (error) return <p style={{ color: "var(--critical)" }}>{error}</p>;
 
   return (
@@ -288,7 +313,7 @@ async function cancelJob() {
       <Link to="/" style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
         ← Back to repositories
       </Link>
-      <h1 style={{ fontSize: "1.5rem", margin: "0.5rem 0 1.5rem" }}>Repository</h1>
+      <h1 style={{ fontSize: "1.5rem", margin: "0.5rem 0 1.5rem" }}>{repoName}</h1>
 
       {/* Signature element: risk spectrum bar */}
       <div style={{ marginBottom: "2rem" }}>
@@ -320,7 +345,7 @@ async function cancelJob() {
               onClick={() => {
                 setSeverityFilter(severityFilter === sev ? null : sev);
                 setPage(1);
-         }}
+              }}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -414,15 +439,15 @@ async function cancelJob() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
         {totalPages > 1 && (
           <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "0.75rem" }}>
-          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={pageBtnStyle}>
-          ← Prev
-          </button>
-          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", alignSelf: "center" }}>
-            Page {page} of {totalPages}
-          </span>
-          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pageBtnStyle}>
-           Next →
-          </button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={pageBtnStyle}>
+              ← Prev
+            </button>
+            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", alignSelf: "center" }}>
+              Page {page} of {totalPages}
+            </span>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pageBtnStyle}>
+              Next →
+            </button>
           </div>
         )}
         <section>
@@ -452,57 +477,57 @@ async function cancelJob() {
             ))}
           </div>
         </section>
-        
+
         <section>
-  <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Symbols</h2>
-  <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.6rem", flexWrap: "wrap" }}>
-    {["function", "class", "import", "comment"].map((type) => (
-      <button
-        key={type}
-        onClick={() => setSymbolTypeFilter(symbolTypeFilter === type ? null : type)}
-        style={{
-          background: symbolTypeFilter === type ? "var(--surface-raised)" : "transparent",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          color: "var(--text-muted)",
-          padding: "0.2rem 0.5rem",
-          fontSize: "0.72rem",
-          cursor: "pointer",
-        }}
-      >
-        {type} ({symbols.filter((s) => s.type === type).length})
-      </button>
-    ))}
-  </div>
-  <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: 500, overflowY: "auto" }}>
-    {symbols
-      .filter((s) => !symbolTypeFilter || s.type === symbolTypeFilter)
-      .map((s, idx) => (
-        <div
-          key={idx}
-          className="mono"
-          style={{
-            fontSize: "0.75rem",
-            padding: "0.35rem 0.5rem",
-            borderRadius: 4,
-            background: "var(--surface)",
-            border: "1px solid var(--border)",
-          }}
-        >
-          <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
-            {s.path}
-            {s.line_number ? `:${s.line_number}` : ""}
+          <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Symbols</h2>
+          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.6rem", flexWrap: "wrap" }}>
+            {["function", "class", "import", "comment"].map((type) => (
+              <button
+                key={type}
+                onClick={() => setSymbolTypeFilter(symbolTypeFilter === type ? null : type)}
+                style={{
+                  background: symbolTypeFilter === type ? "var(--surface-raised)" : "transparent",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  color: "var(--text-muted)",
+                  padding: "0.2rem 0.5rem",
+                  fontSize: "0.72rem",
+                  cursor: "pointer",
+                }}
+              >
+                {type} ({symbols.filter((s) => s.type === type).length})
+              </button>
+            ))}
           </div>
-          <div style={{ color: "var(--text)" }}>
-            <span style={{ color: "var(--accent)" }}>{s.type}</span> {s.name ?? "(unnamed)"}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: 500, overflowY: "auto" }}>
+            {symbols
+              .filter((s) => !symbolTypeFilter || s.type === symbolTypeFilter)
+              .map((s, idx) => (
+                <div
+                  key={idx}
+                  className="mono"
+                  style={{
+                    fontSize: "0.75rem",
+                    padding: "0.35rem 0.5rem",
+                    borderRadius: 4,
+                    background: "var(--surface)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
+                    {s.path}
+                    {s.line_number ? `:${s.line_number}` : ""}
+                  </div>
+                  <div style={{ color: "var(--text)" }}>
+                    <span style={{ color: "var(--accent)" }}>{s.type}</span> {s.name ?? "(unnamed)"}
+                  </div>
+                </div>
+              ))}
+            {symbols.length === 0 && (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>No symbols yet. Run Parse first.</p>
+            )}
           </div>
-        </div>
-      ))}
-    {symbols.length === 0 && (
-      <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>No symbols yet. Run Parse first.</p>
-    )}
-  </div>
-</section>
+        </section>
 
         <section>
           <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Files</h2>

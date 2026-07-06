@@ -1,94 +1,113 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg: #14171C;
-  --surface: #1C2028;
-  --surface-raised: #23272F;
-  --surface-hover: #282D37;
-  --border: #2C313A;
-  --text: #E6E8EB;
-  --text-muted: #8B92A0;
-  --accent: #5B8DEF;
-  --accent-hover: #6E9CF5;
-  --critical: #E5484D;
-  --high: #F5A623;
-  --medium: #F5D90A;
-  --low: #3DD68C;
-  --info: #8B92A0;
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
-  --radius: 10px;
+  --bg: #0B0E14;
+  --bg-gradient: radial-gradient(ellipse 1200px 600px at 20% -10%, rgba(124, 158, 255, 0.08), transparent),
+                 radial-gradient(ellipse 800px 500px at 100% 20%, rgba(94, 234, 212, 0.06), transparent);
+  --surface: #12161F;
+  --surface-raised: #1A1F2B;
+  --surface-hover: #212736;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text: #EDEFF3;
+  --text-muted: #8A93A6;
+  --accent: #7C9EFF;
+  --accent-hover: #93AEFF;
+  --accent-glow: rgba(124, 158, 255, 0.35);
+  --accent2: #5EEAD4;
+  --accent2-glow: rgba(94, 234, 212, 0.3);
+  --critical: #F0576B;
+  --high: #FFA83D;
+  --medium: #FFD666;
+  --low: #5EEAD4;
+  --info: #8A93A6;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.4);
+  --radius: 14px;
+  --radius-sm: 8px;
 }
 
 * { box-sizing: border-box; }
-
 html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--bg-gradient), var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font-family: 'IBM Plex Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3 {
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-code, .mono {
-  font-family: 'IBM Plex Mono', monospace;
-}
+h1, h2, h3 { font-weight: 700; letter-spacing: -0.02em; }
+code, .mono { font-family: 'IBM Plex Mono', monospace; }
 
 a { color: var(--accent); transition: color 0.15s ease; }
 a:hover { color: var(--accent-hover); }
 
 button {
   font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.12s ease,
+              opacity 0.15s ease, box-shadow 0.2s ease;
 }
 button:active:not(:disabled) { transform: scale(0.97); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 input {
   font-family: inherit;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 input:focus {
   outline: none;
   border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-::selection {
-  background: var(--accent);
-  color: var(--bg);
-}
+::selection { background: var(--accent); color: var(--bg); }
 
-/* Scrollbars */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.fade-in { animation: fadeIn 0.25s ease; }
+.fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 
 @keyframes shimmer {
-  0% { background-position: -200px 0; }
-  100% { background-position: 200px 0; }
+  0% { background-position: -300px 0; }
+  100% { background-position: 300px 0; }
 }
 .skeleton {
   background: linear-gradient(90deg, var(--surface) 25%, var(--surface-raised) 50%, var(--surface) 75%);
-  background-size: 400px 100%;
-  animation: shimmer 1.4s ease infinite;
-  border-radius: 6px;
+  background-size: 500px 100%;
+  animation: shimmer 1.5s ease infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes growWidth {
+  from { width: 0%; }
+}
+.animate-grow { animation: growWidth 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.card {
+  background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
 }
 
 @media (prefers-reduced-motion: reduce) {
