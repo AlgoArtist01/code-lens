@@ -1,5 +1,5 @@
 import { pgPool } from "./db.js";
-import { callOllama } from "./ollama.js";
+import { callOllamaText } from "./ollama.js";
 
 interface RepoContext {
   fileCount: number;
@@ -76,7 +76,7 @@ ${formatContext(ctx)}
 
 Include: project title, a short description inferred from the context, setup/installation steps (infer package manager from languages — npm for js/ts, pip for python, etc.), a project structure section listing the top-level directories, and a usage section. Use the actual directory names, dependencies, and function/class names from the context above where relevant — do not invent unrelated content. Output ONLY the markdown content, no preamble or explanation.`;
 
-  const result = await callOllama(prompt);
+  const result = await callOllamaText(prompt);
   if (!result.success) throw new Error(result.error ?? "README generation failed");
   return result.raw.trim();
 }
@@ -89,7 +89,7 @@ ${formatContext(ctx)}
 
 Include: a high-level overview of the system, an explanation of each top-level directory's purpose (infer from naming conventions, e.g. "routes" likely holds API endpoints, "lib" holds shared utilities), key classes and their likely responsibilities, and how the modules relate to each other based on the imports/dependencies detected. Use the actual directory and class names from the context — do not invent unrelated content. Output ONLY the markdown content, no preamble.`;
 
-  const result = await callOllama(prompt);
+  const result = await callOllamaText(prompt);
   if (!result.success) throw new Error(result.error ?? "Architecture doc generation failed");
   return result.raw.trim();
 }
@@ -102,7 +102,7 @@ ${formatContext(ctx)}
 
 List the functions detected (${ctx.functionNames.join(", ") || "none found"}) as API surface, grouping related functions where names suggest a relationship (e.g. same prefix or file). For each, write a plausible one-line description of its likely purpose based on its name. If no clear API functions exist, state that no public API surface was detected and suggest the developer document endpoints manually. Output ONLY the markdown content, no preamble.`;
 
-  const result = await callOllama(prompt);
+  const result = await callOllamaText(prompt);
   if (!result.success) throw new Error(result.error ?? "API doc generation failed");
   return result.raw.trim();
 }

@@ -7,6 +7,8 @@ import {
 import { ReviewJob } from "../lib/api.js";
 import { Symbol } from "../lib/api.js";
 import { Folder, FolderOpen, File as FileIcon, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
+import { DocEntry } from "../lib/api.js";
+import { FileText } from "lucide-react";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"] as const;
 const SEVERITY_COLORS: Record<string, string> = {
@@ -181,23 +183,28 @@ export function Repository() {
   const [symbols, setSymbols] = useState<Symbol[]>([]);
   const [symbolTypeFilter, setSymbolTypeFilter] = useState<string | null>(null);
   const [repoName, setRepoName] = useState<string>("");
+  const [docs, setDocs] = useState<DocEntry[]>([]);
+  const [docLoading, setDocLoading] = useState<string | null>(null);
+  const [activeDoc, setActiveDoc] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const [issuesRes, treeRes, symbolsRes, reposRes] = await Promise.all([
+        const [issuesRes, treeRes, symbolsRes, reposRes, docsRes] = await Promise.all([
           api.get(`/repo/${id}/issues`),
           api.get(`/repo/${id}/tree`),
           api.get(`/repo/${id}/symbols`),
           api.get(`/repos`),
+          api.get(`/repo/${id}/docs`),
         ]);
         setIssues(issuesRes.data.issues);
         setFiles(treeRes.data.files);
         setSymbols(symbolsRes.data.symbols);
         const match = reposRes.data.find((r: any) => r.id === id);
         setRepoName(match?.name ?? "Repository");
+        setDocs(docsRes.data.documents);
       } catch {
         setError("Failed to load repository data");
       } finally {
@@ -288,6 +295,22 @@ export function Repository() {
     acc[sev] = issues.filter((i) => i.severity === sev).length;
     return acc;
   }, {} as Record<string, number>);
+
+  async function generateDoc(docType: "readme" | "architecture" | "api") {
+  setDocLoading(docType);
+  try {
+    const res = await api.post(`/repo/${id}/docs/${docType}`);
+    setDocs((prev) => {
+      const filtered = prev.filter((d) => d.doc_type !== docType);
+      return [...filtered, { doc_type: docType, content: res.data.content, generated_at: new Date().toISOString() }];
+    });
+    setActiveDoc(docType);
+  } catch (err: any) {
+    setActionMsg(err.response?.data?.error ?? `${docType} generation failed`);
+  } finally {
+    setDocLoading(null);
+  }
+}
 
   const total = issues.length;
 

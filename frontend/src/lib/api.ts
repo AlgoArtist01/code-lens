@@ -63,3 +63,9 @@ export interface Symbol {
   name: string | null;
   line_number: number | null;
 }
+
+export interface DocEntry {
+  doc_type: "readme" | "architecture" | "api";
+  content: string;
+  generated_at: string;
+}

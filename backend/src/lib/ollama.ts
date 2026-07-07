@@ -121,3 +121,41 @@ export async function streamOllama(
     return { raw: "", success: false, error: err.message ?? "Unknown Ollama error" };
   }
 }
+
+async function callOllamaOnceText(prompt: string): Promise<OllamaResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${config.ollama.url}/api/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: config.ollama.model,
+        prompt,
+        stream: false,
+        // no format: "json" here — plain text output
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return { raw: "", success: false, error: `Ollama HTTP ${response.status}` };
+    }
+
+    const data = (await response.json()) as { response: string };
+    return { raw: data.response, success: true };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err.name === "AbortError") {
+      return { raw: "", success: false, error: "Ollama request timed out" };
+    }
+    return { raw: "", success: false, error: err.message ?? "Unknown Ollama error" };
+  }
+}
+
+export async function callOllamaText(prompt: string): Promise<OllamaResult> {
+  return ollamaQueue.run(() => callOllamaOnceText(prompt));
+}
