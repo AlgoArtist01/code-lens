@@ -11,6 +11,7 @@ import { parseRouter } from "./routes/parse.js";
 import { analyzeRouter } from "./routes/analyze.js";
 import { aiReviewRouter } from "./routes/aiReview.js";
 import { jobsRouter } from "./routes/jobs.js";
+import { docsRouter } from "./routes/docs.js";
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp() {
   app.use("/api", analyzeRouter);
   app.use("/api", aiReviewRouter);
   app.use("/api", jobsRouter);
+  app.use("/api", docsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

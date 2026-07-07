@@ -87,3 +87,12 @@ CREATE TABLE IF NOT EXISTS review_jobs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_review_jobs_repo ON review_jobs(repository_id);
+
+CREATE TABLE IF NOT EXISTS documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  doc_type TEXT NOT NULL CHECK (doc_type IN ('readme', 'architecture', 'api')),
+  content TEXT NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (repository_id, doc_type)
+);
