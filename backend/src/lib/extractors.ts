@@ -35,7 +35,7 @@ const JS_TS_PATTERNS = [
 ];
 
 const JAVA_PATTERNS = [
-  { type: "function" as const, regex: /^\s*(?:public|private|protected)?\s*(?:static\s+)?\w[\w<>\[\]]*\s+([a-zA-Z_]\w*)\s*\(/ },
+  { type: "function" as const, regex: /^\s*(?:public|private|protected)?\s*(?:static\s+)?\w[\w<>[\]]*\s+([a-zA-Z_]\w*)\s*\(/ },
   { type: "class" as const, regex: /^\s*(?:public\s+)?class\s+([a-zA-Z_]\w*)/ },
   { type: "import" as const, regex: /^\s*import\s+([\w.]+)/ },
   { type: "comment" as const, regex: /^\s*\/\/(.*)/ },

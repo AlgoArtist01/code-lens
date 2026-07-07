@@ -89,7 +89,7 @@ export async function streamOllama(
     let fullText = "";
     let buffer = "";
 
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
 

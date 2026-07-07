@@ -4,14 +4,22 @@ import AdmZip from "adm-zip";
 import { simpleGit } from "simple-git";
 import { v4 as uuidv4 } from "uuid";
 import fs from "fs/promises";
+import rateLimit from "express-rate-limit";
 import { pgPool } from "../lib/db.js";
 import { requireAuth, AuthedRequest } from "../middleware/auth.js";
 import { repoPath, ensureStorageRoot, deleteRepoFolder } from "../lib/storage.js";
 
 export const reposRouter = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 200 * 1024 * 1024 } });
+const repoCreateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many repository creation requests, please try again shortly." },
+});
 
-reposRouter.post("/repo/upload", requireAuth, upload.single("file"), async (req: AuthedRequest, res) => {
+reposRouter.post("/repo/upload", repoCreateLimiter, requireAuth, upload.single("file"), async (req: AuthedRequest, res) => {
   if (!req.file) {
     res.status(400).json({ error: "file field required (zip)" });
     return;
@@ -40,7 +48,7 @@ reposRouter.post("/repo/upload", requireAuth, upload.single("file"), async (req:
   res.status(201).json(result.rows[0]);
 });
 
-reposRouter.post("/repo/git", requireAuth, async (req: AuthedRequest, res) => {
+reposRouter.post("/repo/git", repoCreateLimiter, requireAuth, async (req: AuthedRequest, res) => {
   const { url, name } = req.body ?? {};
   if (typeof url !== "string" || !url.trim()) {
     res.status(400).json({ error: "url required" });
@@ -52,7 +60,7 @@ reposRouter.post("/repo/git", requireAuth, async (req: AuthedRequest, res) => {
   await ensureStorageRoot();
   const destDir = repoPath(repoId);
 
-  const insertPending = await pgPool.query(
+  await pgPool.query(
     `INSERT INTO repositories (id, user_id, name, source_type, source_ref, status)
      VALUES ($1, $2, $3, 'git', $4, 'pending') RETURNING *`,
     [repoId, req.user!.userId, repoName, url]
