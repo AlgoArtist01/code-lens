@@ -6,6 +6,7 @@ import {
 } from "recharts";
 import { ReviewJob } from "../lib/api.js";
 import { Symbol } from "../lib/api.js";
+import { Folder, FolderOpen, File as FileIcon, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"] as const;
 const SEVERITY_COLORS: Record<string, string> = {
@@ -323,7 +324,17 @@ export function Repository() {
             {total} issue{total !== 1 ? "s" : ""}
           </span>
         </div>
-        <div style={{ display: "flex", height: 10, borderRadius: 6, overflow: "hidden", background: "var(--surface-raised)" }}>
+        <div
+          className="animate-grow"
+          style={{
+            display: "flex",
+            height: 12,
+            borderRadius: 999,
+            overflow: "hidden",
+            background: "var(--surface-hover)",
+            boxShadow: "inset 0 1px 2px rgba(0,0,0,0.2)",
+          }}
+        >
           {total === 0 ? (
             <div style={{ width: "100%", background: "var(--low)" }} />
           ) : (
@@ -374,7 +385,10 @@ export function Repository() {
           alignItems: "center",
         }}
       >
-        <button onClick={runParse} disabled={!!actionLoading} style={actionBtnStyle}>
+        <button onClick={runParse} disabled={!!actionLoading} style={actionBtnStyle}
+          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--accent)")}
+          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}>
+
           {actionLoading === "parse" ? "Parsing..." : "Parse"}
         </button>
         <button onClick={() => runAnalyze("general")} disabled={!!actionLoading} style={actionBtnStyle}>
@@ -389,7 +403,14 @@ export function Repository() {
         <button
           onClick={startBackgroundReview}
           disabled={!!actionLoading}
-          style={{ ...actionBtnStyle, background: "var(--accent)", border: "none", color: "#fff" }}
+          style={{
+            ...actionBtnStyle,
+            background: "linear-gradient(135deg, var(--accent), var(--accent2))",
+            border: "none",
+            color: "#0B0E14",
+            fontWeight: 700,
+            boxShadow: "0 2px 12px var(--accent-glow)",
+          }}
         >
           {actionLoading === "review" ? "Queued..." : "Run full review (background)"}
         </button>
@@ -437,19 +458,6 @@ export function Repository() {
       )}
       <ChartsSection issues={issues} files={files} />
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
-        {totalPages > 1 && (
-          <div style={{ display: "flex", justifyContent: "center", gap: "0.5rem", marginTop: "0.75rem" }}>
-            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={pageBtnStyle}>
-              ← Prev
-            </button>
-            <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", alignSelf: "center" }}>
-              Page {page} of {totalPages}
-            </span>
-            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={pageBtnStyle}>
-              Next →
-            </button>
-          </div>
-        )}
         <section>
           <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Issues</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: 500, overflowY: "auto" }}>
@@ -459,12 +467,11 @@ export function Repository() {
             {paginatedIssues.map((issue, idx) => (
               <div
                 key={idx}
+                className="card"
                 style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
                   borderLeft: `3px solid ${SEVERITY_COLORS[issue.severity]}`,
-                  borderRadius: 6,
-                  padding: "0.6rem 0.8rem",
+                  borderRadius: "var(--radius-sm)",
+                  padding: "0.7rem 0.9rem",
                   fontSize: "0.82rem",
                 }}
               >
@@ -476,6 +483,31 @@ export function Repository() {
               </div>
             ))}
           </div>
+          {totalPages > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: "0.5rem",
+                marginTop: "0.75rem",
+              }}
+            >
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1} style={pageBtnStyle}>
+                ← Prev
+              </button>
+              <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                style={pageBtnStyle}
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </section>
 
         <section>
@@ -531,24 +563,12 @@ export function Repository() {
 
         <section>
           <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Files</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", maxHeight: 500, overflowY: "auto" }}>
-            {files.map((f) => (
-              <div
-                key={f.path}
-                className="mono"
-                style={{
-                  fontSize: "0.78rem",
-                  padding: "0.35rem 0.5rem",
-                  borderRadius: 4,
-                  color: "var(--text-muted)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <span style={{ color: "var(--text)" }}>{f.path}</span>
-                <span>{f.language ?? "—"}</span>
-              </div>
-            ))}
+          <div style={{ maxHeight: 500, overflowY: "auto" }}>
+            {files.length === 0 ? (
+              <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>No files yet. Run Parse first.</p>
+            ) : (
+              buildFileTree(files).children.map((node) => <FileTreeNode key={node.path} node={node} depth={0} />)
+            )}
           </div>
         </section>
       </div>
@@ -567,12 +587,121 @@ const pageBtnStyle: React.CSSProperties = {
 };
 
 const actionBtnStyle: React.CSSProperties = {
-  background: "var(--surface-raised)",
+  background: "var(--surface-hover)",
   border: "1px solid var(--border)",
-  borderRadius: 6,
+  borderRadius: "var(--radius-sm)",
   color: "var(--text)",
-  padding: "0.5rem 0.9rem",
+  padding: "0.55rem 1rem",
   cursor: "pointer",
   fontSize: "0.82rem",
   fontWeight: 500,
+  transition: "all 0.18s ease",
 };
+
+interface TreeNode {
+  name: string;
+  path: string;
+  isDir: boolean;
+  language?: string | null;
+  children: TreeNode[];
+}
+
+function buildFileTree(files: FileEntry[]): TreeNode {
+  const root: TreeNode = { name: "", path: "", isDir: true, children: [] };
+  for (const file of files) {
+    const parts = file.path.split("/");
+    let current = root;
+    parts.forEach((part, i) => {
+      const isLast = i === parts.length - 1;
+      let existing = current.children.find((c) => c.name === part);
+      if (!existing) {
+        existing = {
+          name: part,
+          path: parts.slice(0, i + 1).join("/"),
+          isDir: !isLast,
+          language: isLast ? file.language : undefined,
+          children: [],
+        };
+        current.children.push(existing);
+      }
+      current = existing;
+    });
+  }
+  function sortNode(node: TreeNode) {
+    node.children.sort((a, b) =>
+      a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
+    );
+    node.children.forEach(sortNode);
+  }
+  sortNode(root);
+  return root;
+}
+
+function FileTreeNode({ node, depth }: { node: TreeNode; depth: number }) {
+  const [open, setOpen] = useState(depth < 1);
+
+  if (!node.isDir) {
+    return (
+      <div
+        className="mono"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          padding: "0.3rem 0.4rem",
+          paddingLeft: `${depth * 1.1 + 0.4}rem`,
+          fontSize: "0.78rem",
+          color: "var(--text)",
+          borderRadius: 4,
+        }}
+      >
+        <FileIcon size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name}</span>
+        {node.language && (
+          <span style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: "0.7rem" }}>
+            {node.language}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="mono"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.3rem",
+          padding: "0.3rem 0.4rem",
+          paddingLeft: `${depth * 1.1}rem`,
+          fontSize: "0.78rem",
+          color: "var(--text)",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          width: "100%",
+          textAlign: "left",
+          fontWeight: 600,
+          borderRadius: 4,
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >
+        {open ? <ChevronDown size={13} /> : <ChevronRightIcon size={13} />}
+        {open ? (
+          <FolderOpen size={14} color="var(--accent)" />
+        ) : (
+          <Folder size={14} color="var(--accent)" />
+        )}
+        {node.name || "root"}
+        <span style={{ marginLeft: "0.3rem", color: "var(--text-muted)", fontWeight: 400, fontSize: "0.7rem" }}>
+          ({node.children.length})
+        </span>
+      </button>
+      {open && node.children.map((child) => <FileTreeNode key={child.path} node={child} depth={depth + 1} />)}
+    </div>
+  );
+}
