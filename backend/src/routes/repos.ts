@@ -52,7 +52,7 @@ reposRouter.post("/repo/git", requireAuth, async (req: AuthedRequest, res) => {
   await ensureStorageRoot();
   const destDir = repoPath(repoId);
 
-  const insertPending = await pgPool.query(
+  await pgPool.query(
     `INSERT INTO repositories (id, user_id, name, source_type, source_ref, status)
      VALUES ($1, $2, $3, 'git', $4, 'pending') RETURNING *`,
     [repoId, req.user!.userId, repoName, url]

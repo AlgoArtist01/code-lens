@@ -74,7 +74,6 @@ export function detectDeadFiles(
 ): GeneralIssue[] {
   const issues: GeneralIssue[] = [];
   const codeFiles = files.filter((f) => f.language && f.content);
-  const allContent = codeFiles.map((f) => f.content as string).join("\n");
 
   for (const file of codeFiles) {
     const baseName = file.path.split("/").pop()?.replace(/\.\w+$/, "");
