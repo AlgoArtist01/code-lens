@@ -28,55 +28,77 @@ ragRouter.post("/repo/:id/rag/index", requireAuth, async (req: AuthedRequest, re
     return;
   }
 
+  ragRouter.get("/repo/:id/rag/status", requireAuth, async (req: AuthedRequest, res) => {
+    const { id } = req.params;
+    const repo = await getOwnedRepo(id, req.user!.userId);
+    if (!repo) {
+      res.status(404).json({ error: "Repository not found" });
+      return;
+    }
+
+    const result = await pgPool.query(
+      "SELECT COUNT(*)::int as chunk_count, COUNT(DISTINCT file_path)::int as file_count FROM chunks WHERE repository_id = $1",
+      [id]
+    );
+    const { chunk_count, file_count } = result.rows[0];
+
+    res.json({
+      repositoryId: id,
+      indexed: chunk_count > 0,
+      chunkCount: chunk_count,
+      fileCount: file_count,
+    });
+  });
+
   const TOP_K = 5;
 
-ragRouter.post("/repo/:id/rag/chat", requireAuth, async (req: AuthedRequest, res) => {
-  const { id } = req.params;
-  const { question } = req.body ?? {};
+  ragRouter.post("/repo/:id/rag/chat", requireAuth, async (req: AuthedRequest, res) => {
+    const { id } = req.params;
+    const { question } = req.body ?? {};
 
-  if (typeof question !== "string" || !question.trim()) {
-    res.status(400).json({ error: "question required" });
-    return;
-  }
+    if (typeof question !== "string" || !question.trim()) {
+      res.status(400).json({ error: "question required" });
+      return;
+    }
 
-  const repo = await getOwnedRepo(id, req.user!.userId);
-  if (!repo) {
-    res.status(404).json({ error: "Repository not found" });
-    return;
-  }
+    const repo = await getOwnedRepo(id, req.user!.userId);
+    if (!repo) {
+      res.status(404).json({ error: "Repository not found" });
+      return;
+    }
 
-  const chunksResult = await pgPool.query(
-    "SELECT file_path, content, start_line, end_line, embedding FROM chunks WHERE repository_id = $1",
-    [id]
-  );
+    const chunksResult = await pgPool.query(
+      "SELECT file_path, content, start_line, end_line, embedding FROM chunks WHERE repository_id = $1",
+      [id]
+    );
 
-  if (chunksResult.rows.length === 0) {
-    res.status(400).json({ error: "Repository not indexed yet. Run /rag/index first." });
-    return;
-  }
+    if (chunksResult.rows.length === 0) {
+      res.status(400).json({ error: "Repository not indexed yet. Run /rag/index first." });
+      return;
+    }
 
-  const questionEmbedding = await embedText(question);
-  if (!questionEmbedding) {
-    res.status(502).json({ error: "Failed to embed question" });
-    return;
-  }
+    const questionEmbedding = await embedText(question);
+    if (!questionEmbedding) {
+      res.status(502).json({ error: "Failed to embed question" });
+      return;
+    }
 
-  const scored = chunksResult.rows.map((row) => ({
-    filePath: row.file_path,
-    content: row.content,
-    startLine: row.start_line,
-    endLine: row.end_line,
-    score: cosineSimilarity(questionEmbedding, row.embedding),
-  }));
+    const scored = chunksResult.rows.map((row) => ({
+      filePath: row.file_path,
+      content: row.content,
+      startLine: row.start_line,
+      endLine: row.end_line,
+      score: cosineSimilarity(questionEmbedding, row.embedding),
+    }));
 
-  scored.sort((a, b) => b.score - a.score);
-  const topChunks = scored.slice(0, TOP_K);
+    scored.sort((a, b) => b.score - a.score);
+    const topChunks = scored.slice(0, TOP_K);
 
-  const contextBlock = topChunks
-    .map((c) => `File: ${c.filePath} (lines ${c.startLine}-${c.endLine})\n\`\`\`\n${c.content}\n\`\`\``)
-    .join("\n\n");
+    const contextBlock = topChunks
+      .map((c) => `File: ${c.filePath} (lines ${c.startLine}-${c.endLine})\n\`\`\`\n${c.content}\n\`\`\``)
+      .join("\n\n");
 
-  const prompt = `You are a helpful assistant answering questions about a codebase using only the provided context.
+    const prompt = `You are a helpful assistant answering questions about a codebase using only the provided context.
 
 Context from the repository:
 
@@ -86,26 +108,26 @@ Question: ${question}
 
 Answer using only the context above. If the context doesn't contain enough information to answer, say so clearly rather than guessing. Reference specific file paths when relevant. Keep the answer concise.`;
 
-  const result = await callOllamaText(prompt);
-  if (!result.success) {
-    res.status(502).json({ error: result.error ?? "Chat failed" });
-    return;
-  }
+    const result = await callOllamaText(prompt);
+    if (!result.success) {
+      res.status(502).json({ error: result.error ?? "Chat failed" });
+      return;
+    }
 
-  res.json({
-    repositoryId: id,
-    question,
-    answer: result.raw.trim(),
-    sources: topChunks.map((c) => ({ filePath: c.filePath, startLine: c.startLine, endLine: c.endLine, score: c.score })),
+    res.json({
+      repositoryId: id,
+      question,
+      answer: result.raw.trim(),
+      sources: topChunks.map((c) => ({ filePath: c.filePath, startLine: c.startLine, endLine: c.endLine, score: c.score })),
+    });
   });
-});
 
   const rootDir = repoPath(id);
   const { files } = await walkRepository(rootDir);
   const RAG_LANGUAGES = ["python", "javascript", "typescript", "java", "go", "rust", "cpp", "c", "csharp", "php", "ruby", "swift", "kotlin", "scala", "haskell", "elixir", "clojure", "dart"];
   const codeFiles = files
-  .filter((f) => f.language && RAG_LANGUAGES.includes(f.language) && f.content)
-  .slice(0, MAX_FILES_TO_INDEX);
+    .filter((f) => f.language && RAG_LANGUAGES.includes(f.language) && f.content)
+    .slice(0, MAX_FILES_TO_INDEX);
 
   await pgPool.query("DELETE FROM chunks WHERE repository_id = $1", [id]);
 

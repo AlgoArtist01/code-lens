@@ -69,3 +69,16 @@ export interface DocEntry {
   content: string;
   generated_at: string;
 }
+
+export interface RagSource {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  score: number;
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  sources?: RagSource[];
+}

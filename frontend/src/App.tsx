@@ -10,6 +10,7 @@ import { Settings } from "./pages/Settings.js";
 import { Profile } from "./pages/Profile.js";
 import { Repository } from "./pages/Repository.js";
 import { Review } from "./pages/Review.js";
+import { Chat } from "./pages/Chat.js";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/repository/:id" element={<Repository />} />
                 <Route path="/repository/:id/review" element={<Review />} />
+                <Route path="/repository/:id/chat" element={<Chat />} />
               </Route>
             </Route>
           </Routes>

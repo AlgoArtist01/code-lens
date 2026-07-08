@@ -298,20 +298,20 @@ export function Repository() {
   }, {} as Record<string, number>);
 
   async function generateDoc(docType: "readme" | "architecture" | "api") {
-  setDocLoading(docType);
-  try {
-    const res = await api.post(`/repo/${id}/docs/${docType}`);
-    setDocs((prev) => {
-      const filtered = prev.filter((d) => d.doc_type !== docType);
-      return [...filtered, { doc_type: docType, content: res.data.content, generated_at: new Date().toISOString() }];
-    });
-    setActiveDoc(docType);
-  } catch (err: any) {
-    setActionMsg(err.response?.data?.error ?? `${docType} generation failed`);
-  } finally {
-    setDocLoading(null);
+    setDocLoading(docType);
+    try {
+      const res = await api.post(`/repo/${id}/docs/${docType}`);
+      setDocs((prev) => {
+        const filtered = prev.filter((d) => d.doc_type !== docType);
+        return [...filtered, { doc_type: docType, content: res.data.content, generated_at: new Date().toISOString() }];
+      });
+      setActiveDoc(docType);
+    } catch (err: any) {
+      setActionMsg(err.response?.data?.error ?? `${docType} generation failed`);
+    } finally {
+      setDocLoading(null);
+    }
   }
-}
 
   const total = issues.length;
 
@@ -443,6 +443,12 @@ export function Repository() {
           style={{ ...actionBtnStyle, textDecoration: "none", display: "inline-block" }}
         >
           AI Review →
+        </Link>
+        <Link
+          to={`/repository/${id}/chat`}
+          style={{ ...actionBtnStyle, textDecoration: "none", display: "inline-block" }}
+        >
+          Ask Repository →
         </Link>
       </div>
 
@@ -622,8 +628,8 @@ export function Repository() {
                 {docLoading === docType
                   ? "Generating..."
                   : existing
-                  ? `Regenerate ${docType}.md`
-                  : `Generate ${docType}.md`}
+                    ? `Regenerate ${docType}.md`
+                    : `Generate ${docType}.md`}
               </button>
             );
           })}
