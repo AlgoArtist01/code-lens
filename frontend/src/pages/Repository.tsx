@@ -9,6 +9,7 @@ import { Symbol } from "../lib/api.js";
 import { Folder, FolderOpen, File as FileIcon, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 import { DocEntry } from "../lib/api.js";
 import { FileText } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"] as const;
 const SEVERITY_COLORS: Record<string, string> = {
@@ -595,6 +596,81 @@ export function Repository() {
           </div>
         </section>
       </div>
+      <section style={{ marginTop: "2rem" }}>
+        <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Documentation</h2>
+        <div style={{ display: "flex", gap: "0.6rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+          {(["readme", "architecture", "api"] as const).map((docType) => {
+            const existing = docs.find((d) => d.doc_type === docType);
+            return (
+              <button
+                key={docType}
+                onClick={() => generateDoc(docType)}
+                disabled={docLoading !== null}
+                className="card"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.6rem 1rem",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  border: activeDoc === docType ? "1px solid var(--accent)" : undefined,
+                }}
+              >
+                <FileText size={15} />
+                {docLoading === docType
+                  ? "Generating..."
+                  : existing
+                  ? `Regenerate ${docType}.md`
+                  : `Generate ${docType}.md`}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+          {docs.map((d) => (
+            <button
+              key={d.doc_type}
+              onClick={() => setActiveDoc(d.doc_type)}
+              style={{
+                background: activeDoc === d.doc_type ? "var(--surface-hover)" : "transparent",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius-sm)",
+                color: "var(--text)",
+                padding: "0.35rem 0.75rem",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+              }}
+            >
+              {d.doc_type}.md
+            </button>
+          ))}
+        </div>
+
+        {activeDoc && (
+          <div
+            className="card"
+            style={{
+              padding: "1.5rem",
+              maxHeight: 600,
+              overflowY: "auto",
+              lineHeight: 1.6,
+            }}
+          >
+            <ReactMarkdown>
+              {docs.find((d) => d.doc_type === activeDoc)?.content ?? "No content"}
+            </ReactMarkdown>
+          </div>
+        )}
+
+        {!activeDoc && docs.length === 0 && (
+          <p style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
+            No documentation generated yet. Click a button above to generate.
+          </p>
+        )}
+      </section>
     </div>
   );
 }
