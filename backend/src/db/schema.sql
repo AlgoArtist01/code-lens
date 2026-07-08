@@ -96,3 +96,16 @@ CREATE TABLE IF NOT EXISTS documents (
   generated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (repository_id, doc_type)
 );
+
+CREATE TABLE IF NOT EXISTS chunks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  repository_id UUID NOT NULL REFERENCES repositories(id) ON DELETE CASCADE,
+  file_path TEXT NOT NULL,
+  content TEXT NOT NULL,
+  start_line INTEGER,
+  end_line INTEGER,
+  embedding JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chunks_repo ON chunks(repository_id);

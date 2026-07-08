@@ -12,6 +12,7 @@ import { analyzeRouter } from "./routes/analyze.js";
 import { aiReviewRouter } from "./routes/aiReview.js";
 import { jobsRouter } from "./routes/jobs.js";
 import { docsRouter } from "./routes/docs.js";
+import { ragRouter } from "./routes/rag.js";
 
 export function createApp() {
   const app = express();
@@ -29,6 +30,7 @@ export function createApp() {
   app.use("/api", aiReviewRouter);
   app.use("/api", jobsRouter);
   app.use("/api", docsRouter);
+  app.use("/api", ragRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
