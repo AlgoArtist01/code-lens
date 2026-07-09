@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, AiFinding } from "../lib/api.js";
+import { buildFileTree, FileTreeNode } from "../lib/fileTree.js";
 
 interface FileEntry {
   path: string;
@@ -84,26 +85,16 @@ export function Review() {
       <h1 style={{ fontSize: "1.5rem", margin: "0.5rem 0 1.5rem" }}>AI Review</h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "1.5rem" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", maxHeight: 600, overflowY: "auto" }}>
-          {files.map((f) => (
-            <button
-              key={f.path}
-              onClick={() => reviewFile(f.path)}
+        <div style={{ maxHeight: 600, overflowY: "auto" }}>
+          {buildFileTree(files).children.map((node) => (
+            <FileTreeNode
+              key={node.path}
+              node={node}
+              depth={0}
+              onFileClick={reviewFile}
+              selectedPath={selectedFile}
               disabled={streaming}
-              className="mono"
-              style={{
-                textAlign: "left",
-                background: selectedFile === f.path ? "var(--surface-raised)" : "transparent",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                padding: "0.4rem 0.6rem",
-                color: "var(--text)",
-                cursor: streaming ? "not-allowed" : "pointer",
-                fontSize: "0.78rem",
-              }}
-            >
-              {f.path}
-            </button>
+            />
           ))}
         </div>
 

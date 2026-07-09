@@ -5,11 +5,10 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { ReviewJob } from "../lib/api.js";
-import { Symbol } from "../lib/api.js";
-import { Folder, FolderOpen, File as FileIcon, ChevronRight as ChevronRightIcon, ChevronDown } from "lucide-react";
 import { DocEntry } from "../lib/api.js";
 import { FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { buildFileTree, FileTreeNode } from "../lib/fileTree.js";
 
 const SEVERITY_ORDER = ["critical", "high", "medium", "low", "info"] as const;
 const SEVERITY_COLORS: Record<string, string> = {
@@ -59,7 +58,7 @@ function ChartsSection({ issues, files }: { issues: Issue[]; files: FileEntry[] 
   const PIE_COLORS = ["#5B8DEF", "#3DD68C", "#F5A623", "#E5484D", "#8B92A0", "#F5D90A"];
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
       <ChartCard title="Issue distribution">
         {severityData.length === 0 ? (
           <EmptyChart />
@@ -181,8 +180,6 @@ export function Repository() {
   const [job, setJob] = useState<ReviewJob | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
-  const [symbols, setSymbols] = useState<Symbol[]>([]);
-  const [symbolTypeFilter, setSymbolTypeFilter] = useState<string | null>(null);
   const [repoName, setRepoName] = useState<string>("");
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [docLoading, setDocLoading] = useState<string | null>(null);
@@ -193,16 +190,14 @@ export function Repository() {
       setLoading(true);
       setError(null);
       try {
-        const [issuesRes, treeRes, symbolsRes, reposRes, docsRes] = await Promise.all([
+        const [issuesRes, treeRes, reposRes, docsRes] = await Promise.all([
           api.get(`/repo/${id}/issues`),
           api.get(`/repo/${id}/tree`),
-          api.get(`/repo/${id}/symbols`),
           api.get(`/repos`),
           api.get(`/repo/${id}/docs`),
         ]);
         setIssues(issuesRes.data.issues);
         setFiles(treeRes.data.files);
-        setSymbols(symbolsRes.data.symbols);
         const match = reposRes.data.find((r: any) => r.id === id);
         setRepoName(match?.name ?? "Repository");
         setDocs(docsRes.data.documents);
@@ -223,7 +218,6 @@ export function Repository() {
       const treeRes = await api.get(`/repo/${id}/tree`);
       setFiles(treeRes.data.files);
       const symbolsRes = await api.get(`/repo/${id}/symbols`);
-      setSymbols(symbolsRes.data.symbols);
     } catch (err: any) {
       setActionMsg(err.response?.data?.error ?? "Parse failed");
     } finally {
@@ -541,57 +535,6 @@ export function Repository() {
         </section>
 
         <section>
-          <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Symbols</h2>
-          <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.6rem", flexWrap: "wrap" }}>
-            {["function", "class", "import", "comment"].map((type) => (
-              <button
-                key={type}
-                onClick={() => setSymbolTypeFilter(symbolTypeFilter === type ? null : type)}
-                style={{
-                  background: symbolTypeFilter === type ? "var(--surface-raised)" : "transparent",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  color: "var(--text-muted)",
-                  padding: "0.2rem 0.5rem",
-                  fontSize: "0.72rem",
-                  cursor: "pointer",
-                }}
-              >
-                {type} ({symbols.filter((s) => s.type === type).length})
-              </button>
-            ))}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem", maxHeight: 500, overflowY: "auto" }}>
-            {symbols
-              .filter((s) => !symbolTypeFilter || s.type === symbolTypeFilter)
-              .map((s, idx) => (
-                <div
-                  key={idx}
-                  className="mono"
-                  style={{
-                    fontSize: "0.75rem",
-                    padding: "0.35rem 0.5rem",
-                    borderRadius: 4,
-                    background: "var(--surface)",
-                    border: "1px solid var(--border)",
-                  }}
-                >
-                  <div style={{ color: "var(--text-muted)", fontSize: "0.68rem" }}>
-                    {s.path}
-                    {s.line_number ? `:${s.line_number}` : ""}
-                  </div>
-                  <div style={{ color: "var(--text)" }}>
-                    <span style={{ color: "var(--accent)" }}>{s.type}</span> {s.name ?? "(unnamed)"}
-                  </div>
-                </div>
-              ))}
-            {symbols.length === 0 && (
-              <p style={{ color: "var(--text-muted)", fontSize: "0.8rem" }}>No symbols yet. Run Parse first.</p>
-            )}
-          </div>
-        </section>
-
-        <section>
           <h2 style={{ fontSize: "1.05rem", marginBottom: "0.75rem" }}>Files</h2>
           <div style={{ maxHeight: 500, overflowY: "auto" }}>
             {files.length === 0 ? (
@@ -703,110 +646,3 @@ const actionBtnStyle: React.CSSProperties = {
   transition: "all 0.18s ease",
 };
 
-interface TreeNode {
-  name: string;
-  path: string;
-  isDir: boolean;
-  language?: string | null;
-  children: TreeNode[];
-}
-
-function buildFileTree(files: FileEntry[]): TreeNode {
-  const root: TreeNode = { name: "", path: "", isDir: true, children: [] };
-  for (const file of files) {
-    const parts = file.path.split("/");
-    let current = root;
-    parts.forEach((part, i) => {
-      const isLast = i === parts.length - 1;
-      let existing = current.children.find((c) => c.name === part);
-      if (!existing) {
-        existing = {
-          name: part,
-          path: parts.slice(0, i + 1).join("/"),
-          isDir: !isLast,
-          language: isLast ? file.language : undefined,
-          children: [],
-        };
-        current.children.push(existing);
-      }
-      current = existing;
-    });
-  }
-  function sortNode(node: TreeNode) {
-    node.children.sort((a, b) =>
-      a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1
-    );
-    node.children.forEach(sortNode);
-  }
-  sortNode(root);
-  return root;
-}
-
-function FileTreeNode({ node, depth }: { node: TreeNode; depth: number }) {
-  const [open, setOpen] = useState(depth < 1);
-
-  if (!node.isDir) {
-    return (
-      <div
-        className="mono"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          padding: "0.3rem 0.4rem",
-          paddingLeft: `${depth * 1.1 + 0.4}rem`,
-          fontSize: "0.78rem",
-          color: "var(--text)",
-          borderRadius: 4,
-        }}
-      >
-        <FileIcon size={13} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name}</span>
-        {node.language && (
-          <span style={{ marginLeft: "auto", color: "var(--text-muted)", fontSize: "0.7rem" }}>
-            {node.language}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="mono"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.3rem",
-          padding: "0.3rem 0.4rem",
-          paddingLeft: `${depth * 1.1}rem`,
-          fontSize: "0.78rem",
-          color: "var(--text)",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          width: "100%",
-          textAlign: "left",
-          fontWeight: 600,
-          borderRadius: 4,
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-hover)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-      >
-        {open ? <ChevronDown size={13} /> : <ChevronRightIcon size={13} />}
-        {open ? (
-          <FolderOpen size={14} color="var(--accent)" />
-        ) : (
-          <Folder size={14} color="var(--accent)" />
-        )}
-        {node.name || "root"}
-        <span style={{ marginLeft: "0.3rem", color: "var(--text-muted)", fontWeight: 400, fontSize: "0.7rem" }}>
-          ({node.children.length})
-        </span>
-      </button>
-      {open && node.children.map((child) => <FileTreeNode key={child.path} node={child} depth={depth + 1} />)}
-    </div>
-  );
-}
