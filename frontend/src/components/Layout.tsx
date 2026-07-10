@@ -171,6 +171,17 @@ export function Layout() {
             Log out
           </button>
         </div>
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: "0.7rem",
+            color: "var(--text-muted)",
+            marginTop: "1rem",
+            opacity: 0.7,
+          }}
+        >
+          Built by Emm Zee
+        </div>
       </aside>
       <main className="fade-in" style={{ flex: 1, padding: "2.5rem", maxWidth: 1200 }}>
         <Outlet />

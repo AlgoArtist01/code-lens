@@ -177,3 +177,7 @@ See [CHANGELOG.md](./CHANGELOG.md).
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+---
+
+Built by Emm Zee
