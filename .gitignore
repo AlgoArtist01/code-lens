@@ -6,7 +6,6 @@ build/
 .DS_Store
 coverage/
 backend/storage/
-.env.example
 backend/.env
 backend/.env.local
 backend/node_modules/
