@@ -49,7 +49,7 @@ export function Layout() {
           >
             {'>'}
           </span>
-          CodeReview
+          Code Lens
         </div>
 
         {NAV_ITEMS.map((item) => {

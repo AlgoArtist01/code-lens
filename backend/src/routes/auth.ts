@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { pgPool } from "../lib/db.js";
 import { hashPassword, verifyPassword, signToken } from "../lib/auth.js";
+import { deleteRepoFolder } from "../lib/storage.js";
+import { requireAuth, AuthedRequest } from "../middleware/auth.js";
 
 export const authRouter = Router();
 
@@ -46,4 +48,16 @@ authRouter.post("/login", async (req, res) => {
 
   const token = signToken({ userId: user.id, email: user.email });
   res.json({ token, user: { id: user.id, email: user.email } });
+});
+
+authRouter.delete("/account", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = req.user!.userId;
+
+  const reposResult = await pgPool.query("SELECT id FROM repositories WHERE user_id = $1", [userId]);
+  for (const row of reposResult.rows) {
+    await deleteRepoFolder(row.id);
+  }
+
+  await pgPool.query("DELETE FROM users WHERE id = $1", [userId]);
+  res.status(204).send();
 });

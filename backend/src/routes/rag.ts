@@ -106,7 +106,7 @@ ${contextBlock}
 
 Question: ${question}
 
-Answer using only the context above. If the context doesn't contain enough information to answer, say so clearly rather than guessing. Reference specific file paths when relevant. Keep the answer concise.`;
+Answer using only the context above. If the context doesn't contain enough information to answer, or if the question asks something that can't be determined from code content alone (such as who wrote it, when it was written, whether it is AI- or human-generated, or the author's intent), say so clearly rather than guessing. Reference specific file paths when relevant. Keep the answer concise.`;
 
     const result = await callOllamaText(prompt);
     if (!result.success) {

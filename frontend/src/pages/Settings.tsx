@@ -1,8 +1,28 @@
 import { useTheme } from "../lib/ThemeContext.js";
-import { Moon, Sun, Bell, Shield, LucideIcon } from "lucide-react";
+import { Moon, Sun, LucideIcon } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../lib/api.js";
+import { useAuth } from "../lib/AuthContext.js";
+import { Trash2 } from "lucide-react";
 
 export function Settings() {
   const { theme, toggleTheme } = useTheme();
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await api.delete("/account");
+      logout();
+      navigate("/login");
+    } catch {
+      setDeleting(false);
+    }
+  }
 
   return (
     <div style={{ maxWidth: 560 }}>
@@ -31,15 +51,58 @@ export function Settings() {
         </SettingsRow>
       </SettingsSection>
 
-      <SettingsSection title="Notifications" icon={Bell}>
-        <SettingsRow label="Review completion emails" description="Not yet available">
-          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Coming soon</span>
-        </SettingsRow>
-      </SettingsSection>
-
-      <SettingsSection title="Security" icon={Shield}>
-        <SettingsRow label="Change password" description="Not yet available">
-          <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>Coming soon</span>
+      <SettingsSection title="Danger Zone" icon={Trash2}>
+        <SettingsRow label="Delete account" description="Permanently removes your account and all repositories">
+          {!confirming ? (
+            <button
+              onClick={() => setConfirming(true)}
+              style={{
+                background: "transparent",
+                border: "1px solid var(--critical)",
+                borderRadius: 8,
+                color: "var(--critical)",
+                padding: "0.45rem 0.9rem",
+                cursor: "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              Delete account
+            </button>
+          ) : (
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                style={{
+                  background: "var(--critical)",
+                  border: "none",
+                  borderRadius: 8,
+                  color: "#fff",
+                  padding: "0.45rem 0.9rem",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                {deleting ? "Deleting..." : "Confirm delete"}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                disabled={deleting}
+                style={{
+                  background: "var(--surface-raised)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 8,
+                  color: "var(--text)",
+                  padding: "0.45rem 0.9rem",
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </SettingsRow>
       </SettingsSection>
     </div>

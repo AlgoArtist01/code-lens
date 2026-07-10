@@ -40,7 +40,7 @@ export function Login() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: "1.2rem" }}>
-          <span className="mono" style={{ color: "var(--accent)" }}>{'>'}</span> CodeReview
+          <span className="mono" style={{ color: "var(--accent)" }}>{'>'}</span> Code Lens
         </div>
         <label style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
           Email
