@@ -129,7 +129,7 @@ npm run dev              # starts UI on :5173
 
 Visit `http://localhost:5173`, register an account, and upload or clone a repository.
 
-See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for a deeper walkthrough of the codebase, and [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment on a VPS.
+See [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) for a deeper walkthrough of the codebase. 
 
 ---
 
