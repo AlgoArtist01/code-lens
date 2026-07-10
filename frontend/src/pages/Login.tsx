@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext.js";
+import { getErrorMessage } from "../lib/api.js";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -17,8 +18,8 @@ export function Login() {
     try {
       await login(email, password);
       navigate("/");
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? "Login failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Login failed"));
     } finally {
       setLoading(false);
     }

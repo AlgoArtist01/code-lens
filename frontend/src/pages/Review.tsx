@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api, AiFinding } from "../lib/api.js";
+import { api, AiFinding, getErrorMessage } from "../lib/api.js";
 import { buildFileTree, FileTreeNode } from "../lib/fileTree.js";
 
 interface FileEntry {
@@ -19,7 +19,7 @@ export function Review() {
 
   useEffect(() => {
     api.get(`/repo/${id}/tree`).then((res) => {
-      setFiles(res.data.files.filter((f: any) => f.language));
+      setFiles(res.data.files.filter((f: FileEntry) => f.language));
     });
   }, [id]);
 
@@ -46,9 +46,10 @@ export function Review() {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      // eslint-disable-next-line no-constant-condition
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const { done: isDone, value } = await reader.read();
+        if (isDone) break;
         buffer += decoder.decode(value, { stream: true });
 
         const events = buffer.split("\n\n");
@@ -70,8 +71,8 @@ export function Review() {
           }
         }
       }
-    } catch (err: any) {
-      setError(err.message ?? "Review failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Review failed"));
     } finally {
       setStreaming(false);
     }

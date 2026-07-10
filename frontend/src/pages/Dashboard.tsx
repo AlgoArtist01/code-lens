@@ -1,6 +1,6 @@
 import { useEffect, useState, FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { api, Repository } from "../lib/api.js";
+import { api, Repository, getErrorMessage } from "../lib/api.js";
 import { GitBranch, Upload, Trash2, ChevronRight } from "lucide-react";
 
 export function Dashboard() {
@@ -37,8 +37,8 @@ export function Dashboard() {
       await api.post("/repo/git", { url: gitUrl });
       setGitUrl("");
       await loadRepos();
-    } catch (err: any) {
-      setActionError(err.response?.data?.error ?? "Clone failed");
+    } catch (err) {
+      setActionError(getErrorMessage(err, "Clone failed"));
     } finally {
       setCloning(false);
     }
@@ -55,8 +55,8 @@ export function Dashboard() {
       formData.append("name", file.name.replace(/\.zip$/i, ""));
       await api.post("/repo/upload", formData);
       await loadRepos();
-    } catch (err: any) {
-      setActionError(err.response?.data?.error ?? "Upload failed");
+    } catch (err) {
+      setActionError(getErrorMessage(err, "Upload failed"));
     } finally {
       setUploading(false);
       e.target.value = "";

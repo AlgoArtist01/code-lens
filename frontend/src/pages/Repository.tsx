@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api, Issue } from "../lib/api.js";
+import { api, Repository as Repomodel, Issue, getErrorMessage, ReviewJob, DocEntry } from "../lib/api.js";
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { ReviewJob } from "../lib/api.js";
-import { DocEntry } from "../lib/api.js";
 import { FileText } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { buildFileTree, FileTreeNode } from "../lib/fileTree.js";
@@ -198,7 +196,7 @@ export function Repository() {
         ]);
         setIssues(issuesRes.data.issues);
         setFiles(treeRes.data.files);
-        const match = reposRes.data.find((r: any) => r.id === id);
+        const match = reposRes.data.find((r: Repomodel) => r.id === id);
         setRepoName(match?.name ?? "Repository");
         setDocs(docsRes.data.documents);
       } catch {
@@ -217,9 +215,8 @@ export function Repository() {
       setActionMsg(`Parsed: ${res.data.filesIndexed} files, ${res.data.symbolsExtracted} symbols`);
       const treeRes = await api.get(`/repo/${id}/tree`);
       setFiles(treeRes.data.files);
-      const symbolsRes = await api.get(`/repo/${id}/symbols`);
-    } catch (err: any) {
-      setActionMsg(err.response?.data?.error ?? "Parse failed");
+    } catch (err) {
+      setActionMsg(getErrorMessage(err, "Parse failed"));
     } finally {
       setActionLoading(null);
     }
@@ -233,8 +230,8 @@ export function Repository() {
       setActionMsg(`${kind}: ${res.data.issuesFound} issues found`);
       const issuesRes = await api.get(`/repo/${id}/issues`);
       setIssues(issuesRes.data.issues);
-    } catch (err: any) {
-      setActionMsg(err.response?.data?.error ?? `${kind} analysis failed`);
+    } catch (err) {
+      setActionMsg(getErrorMessage(err, `${kind} analysis failed`));
     } finally {
       setActionLoading(null);
     }
@@ -247,8 +244,8 @@ export function Repository() {
       const res = await api.post(`/repo/${id}/review`);
       setActionMsg("Background review queued");
       pollJob(res.data.jobId);
-    } catch (err: any) {
-      setActionMsg(err.response?.data?.error ?? "Failed to queue review");
+    } catch (err) {
+      setActionMsg(getErrorMessage(err, "Failed to queue review"));
       setActionLoading(null);
     }
   }
@@ -300,8 +297,8 @@ export function Repository() {
         return [...filtered, { doc_type: docType, content: res.data.content, generated_at: new Date().toISOString() }];
       });
       setActiveDoc(docType);
-    } catch (err: any) {
-      setActionMsg(err.response?.data?.error ?? `${docType} generation failed`);
+    } catch (err) {
+      setActionMsg(getErrorMessage(err, `${docType} generation failed`));
     } finally {
       setDocLoading(null);
     }

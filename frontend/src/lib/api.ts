@@ -82,3 +82,10 @@ export interface ChatMessage {
   content: string;
   sources?: RagSource[];
 }
+
+export function getErrorMessage(err: unknown, fallback = "Something went wrong"): string {
+  if (axios.isAxiosError(err)) {
+    return err.response?.data?.error ?? fallback;
+  }
+  return fallback;
+}

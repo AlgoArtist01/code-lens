@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { api, ChatMessage } from "../lib/api.js";
+import { api, ChatMessage, getErrorMessage } from "../lib/api.js";
 import { Send, RefreshCw, FileCode } from "lucide-react";
 
 const SAMPLE_QUESTIONS = [
@@ -41,8 +41,8 @@ export function Chat() {
             const res = await api.post(`/repo/${id}/rag/index`);
             setIndexed(true);
             setIndexInfo(`Indexed ${res.data.filesIndexed} files, ${res.data.chunksCreated} chunks`);
-        } catch (err: any) {
-            setIndexInfo(err.response?.data?.error ?? "Indexing failed");
+        } catch (err) {
+            setIndexInfo(getErrorMessage(err, "Indexing failed"));
         } finally {
             setIndexing(false);
         }
@@ -59,8 +59,8 @@ export function Chat() {
                 ...prev,
                 { role: "assistant", content: res.data.answer, sources: res.data.sources },
             ]);
-        } catch (err: any) {
-            const errMsg = err.response?.data?.error ?? "Something went wrong";
+        } catch (err) {
+            const errMsg = getErrorMessage(err, "Something went wrong");
             setMessages((prev) => [...prev, { role: "assistant", content: `⚠ ${errMsg}` }]);
         } finally {
             setLoading(false);

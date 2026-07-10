@@ -1,7 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext.js";
-
+import { getErrorMessage } from "../lib/api.js";
 
 export function Register() {
   const [email, setEmail] = useState("");
@@ -18,8 +18,8 @@ export function Register() {
     try {
       await register(email, password);
       navigate("/");
-    } catch (err: any) {
-      setError(err.response?.data?.error ?? "Registration failed");
+    } catch (err) {
+      setError(getErrorMessage(err, "Registration failed"));
     } finally {
       setLoading(false);
     }
